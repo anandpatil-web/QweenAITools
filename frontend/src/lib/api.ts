@@ -1,8 +1,14 @@
 import type { AppConfig, JobResponse, ScanResponse, SelectedImage } from "./types";
 
-/** All requests go to the Vite dev origin and are proxied to the backend,
- *  so the FAL_KEY is never present in the frontend. */
-const BASE = "/api";
+/** Base URL for the backend API.
+ *
+ *  - Local dev: unset → "/api", which Vite proxies to the FastAPI backend.
+ *  - Hosted frontend (e.g. Vercel): set VITE_API_BASE to the deployed backend
+ *    origin, e.g. "https://qween-backend.onrender.com/api".
+ *
+ *  The FAL_KEY is never present in the frontend regardless. */
+const RAW_BASE = (import.meta.env.VITE_API_BASE ?? "").trim().replace(/\/+$/, "");
+const BASE = RAW_BASE || "/api";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {

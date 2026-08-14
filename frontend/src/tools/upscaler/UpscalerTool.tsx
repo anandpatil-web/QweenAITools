@@ -21,9 +21,10 @@ type Phase = "select" | "estimate" | "job";
 
 interface Props {
   config: AppConfig;
+  previewMode?: boolean;
 }
 
-export function UpscalerTool({ config }: Props) {
+export function UpscalerTool({ config, previewMode = false }: Props) {
   const [phase, setPhase] = useState<Phase>("select");
   const [selected, setSelected] = useState<SelectedImage[]>([]);
   const [scale, setScale] = useState(config.default_scale_factor);
@@ -300,7 +301,7 @@ export function UpscalerTool({ config }: Props) {
         </p>
       </header>
 
-      {!config.fal_configured && (
+      {!previewMode && !config.fal_configured && (
         <div className="qw-banner qw-banner--warn">
           <span>
             <b>FAL_KEY is not configured on the backend.</b> You can select
@@ -379,7 +380,12 @@ export function UpscalerTool({ config }: Props) {
                 <button
                   className="qw-btn"
                   onClick={runScan}
-                  disabled={scanning || selected.length === 0}
+                  disabled={scanning || selected.length === 0 || previewMode}
+                  title={
+                    previewMode
+                      ? "Connect a backend to scan and upscale"
+                      : undefined
+                  }
                 >
                   {scanning ? "Scanning…" : "Scan & Estimate"}
                 </button>
