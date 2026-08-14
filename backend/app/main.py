@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .core.logging import get_logger
+from .settings.router import router as settings_router
 from .storage import local as storage
 from .tools.upscaler.router import router as upscaler_router
 
@@ -86,7 +87,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 @app.get("/api/health")
 async def health() -> dict:
-    return {"status": "ok", "fal_configured": settings.fal_key_present}
+    return {
+        "status": "ok",
+        "fal_configured": settings.fal_key_present,
+        "supabase_configured": settings.supabase_configured,
+    }
 
 
 @app.get("/api/tools")
@@ -97,6 +102,8 @@ async def list_tools() -> dict:
         ]
     }
 
+
+app.include_router(settings_router)
 
 for tool in TOOLS:
     app.include_router(tool["router"])

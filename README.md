@@ -114,6 +114,49 @@ Select images → Scan & Estimate → Show cost → Confirm & Run → Process �
 
 ---
 
+## Optional: Supabase settings & prompts store
+
+By default the app runs fully local with no database. You can optionally back
+**system settings and prompt templates** with Supabase (no images, no job
+history, no auth are stored there).
+
+1. **Get your keys.** Supabase Dashboard → your project → **Project Settings →
+   API Keys**. Copy the **`service_role`** (secret) key. The project URL is
+   `https://icszdwcdpipuarsctqfo.supabase.co`.
+2. **Create the tables.** In the Supabase **SQL Editor**, run
+   [`supabase/schema.sql`](supabase/schema.sql).
+3. **Configure the backend** (`backend/.env`):
+   ```env
+   SUPABASE_URL=https://icszdwcdpipuarsctqfo.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret
+   ```
+   The service key is **backend only** — never in the frontend or a commit.
+4. Restart `npm run dev`. Editable defaults (scale, concurrency, suffix, INR
+   rate) now come from Supabase, overlaid on env defaults.
+
+If Supabase is not configured, everything still works on env defaults and the
+settings endpoints report `configured: false`.
+
+**Endpoints**
+
+| Method & path                         | Purpose                                  |
+| ------------------------------------- | ---------------------------------------- |
+| `GET /api/settings`                   | Effective settings + whether editable    |
+| `PUT /api/settings`                   | Update editable defaults (validated)     |
+| `GET /api/settings/prompts?tool_id=`  | List prompt templates for a tool         |
+| `PUT /api/settings/prompts`           | Create/update a prompt (`name`, `prompt`)|
+| `DELETE /api/settings/prompts?name=`  | Delete a prompt                          |
+
+Example:
+
+```bash
+curl -X PUT http://localhost:8000/api/settings \
+  -H "Content-Type: application/json" \
+  -d '{"default_scale_factor": 4, "usd_to_inr": 85}'
+```
+
+---
+
 ## Project structure
 
 ```
@@ -137,7 +180,9 @@ qween-ai-tools/
 │       │       ├── filenames.py    # safe upload / output names
 │       │       └── models.py
 │       ├── providers/
-│       │   └── fal/        # fal.ai upload + Crystal Upscaler + error mapping
+│       │   ├── fal/        # fal.ai upload + Crystal Upscaler + error mapping
+│       │   └── supabase/   # optional settings/prompts store (PostgREST)
+│       ├── settings/       # system settings service + API (env + Supabase)
 │       ├── jobs/           # in-memory job state, SSE bus, worker pool
 │       └── storage/        # local temp storage + TTL cleanup
 │

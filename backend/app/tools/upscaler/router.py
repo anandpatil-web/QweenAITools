@@ -47,19 +47,29 @@ _PREVIEW_QUALITY = 82
 
 @router.get("/config")
 async def get_config() -> dict:
-    """Non-secret configuration the frontend needs. Never includes FAL_KEY."""
+    """Non-secret configuration the frontend needs. Never includes FAL_KEY.
+
+    Editable defaults (scale, concurrency, suffix, INR rate) come from the
+    optional Supabase settings store overlaid on env defaults.
+    """
+    from ...settings.service import get_effective_settings
+
+    effective = await get_effective_settings()
     return {
-        "usd_to_inr": settings.usd_to_inr,
+        "usd_to_inr": effective["usd_to_inr"],
         "supported_scale_factors": list(SUPPORTED_SCALE_FACTORS),
         "allowed_concurrency": list(ALLOWED_CONCURRENCY),
-        "default_scale_factor": 2,
-        "default_concurrency": min(4, settings.max_concurrency),
+        "default_scale_factor": effective["default_scale_factor"],
+        "default_concurrency": effective["default_concurrency"],
+        "default_suffix": effective["default_suffix"],
+        "default_output_format": effective["default_output_format"],
         "max_concurrency": min(settings.max_concurrency, 8),
         "max_file_size_mb": settings.max_file_size_mb,
         "image_timeout_seconds": settings.image_timeout_seconds,
         "output_formats": ["jpeg", "png"],
         "accepted_extensions": ["jpg", "jpeg", "png", "webp"],
         "fal_configured": settings.fal_key_present,
+        "supabase_configured": settings.supabase_configured,
     }
 
 

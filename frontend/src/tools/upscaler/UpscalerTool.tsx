@@ -27,7 +27,7 @@ export function UpscalerTool({ config }: Props) {
   const [phase, setPhase] = useState<Phase>("select");
   const [selected, setSelected] = useState<SelectedImage[]>([]);
   const [scale, setScale] = useState(config.default_scale_factor);
-  const [suffix, setSuffix] = useState("");
+  const [suffix, setSuffix] = useState(config.default_suffix ?? "");
   const [concurrency, setConcurrency] = useState(config.default_concurrency);
 
   const [scanning, setScanning] = useState(false);

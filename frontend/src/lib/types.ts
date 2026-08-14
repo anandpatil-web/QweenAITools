@@ -13,12 +13,15 @@ export interface AppConfig {
   allowed_concurrency: number[];
   default_scale_factor: number;
   default_concurrency: number;
+  default_suffix?: string;
+  default_output_format?: string;
   max_concurrency: number;
   max_file_size_mb: number;
   image_timeout_seconds: number;
   output_formats: string[];
   accepted_extensions: string[];
   fal_configured: boolean;
+  supabase_configured?: boolean;
 }
 
 /** A file the user has selected, plus a locally-generated thumbnail. */

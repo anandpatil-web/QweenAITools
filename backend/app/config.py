@@ -67,6 +67,18 @@ class Settings:
     result_ttl_minutes: int = field(default_factory=lambda: _get_int("RESULT_TTL_MINUTES", 60))
     host: str = field(default_factory=lambda: os.getenv("HOST", "127.0.0.1"))
     port: int = field(default_factory=lambda: _get_int("PORT", 8000))
+    # Optional Supabase-backed system settings/prompts store. Backend only.
+    supabase_url: str = field(
+        default_factory=lambda: os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+    )
+    supabase_service_key: str = field(
+        default_factory=lambda: (
+            os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            or os.getenv("SUPABASE_SECRET_KEY")
+            or os.getenv("SUPABASE_KEY")
+            or ""
+        ).strip()
+    )
     cors_origins: tuple[str, ...] = field(
         default_factory=lambda: tuple(
             origin.strip()
@@ -85,6 +97,10 @@ class Settings:
     @property
     def fal_key_present(self) -> bool:
         return bool(self.fal_key)
+
+    @property
+    def supabase_configured(self) -> bool:
+        return bool(self.supabase_url and self.supabase_service_key)
 
 
 settings = Settings()
