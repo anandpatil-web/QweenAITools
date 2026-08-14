@@ -546,6 +546,85 @@ button {
   flex: 1;
 }
 
+/* slider + numeric input for scale / creativity */
+.qw-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qw-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 170px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--qw-line-strong);
+  outline: none;
+  accent-color: var(--qw-gold);
+}
+
+.qw-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--qw-gold);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(27, 25, 23, 0.25);
+}
+
+.qw-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--qw-gold);
+  cursor: pointer;
+}
+
+.qw-input--num {
+  min-width: 0;
+  width: 68px;
+  text-align: center;
+  padding: 9px 8px;
+}
+
+/* run bar: cost right next to the Upscale button */
+.qw-runbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 34px;
+  flex-wrap: wrap;
+}
+
+.qw-runcost {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.qw-runcost__label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--qw-muted);
+}
+
+.qw-runcost__usd {
+  font-family: var(--qw-serif);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--qw-ink);
+}
+
+.qw-runcost__inr {
+  font-size: 13px;
+  color: var(--qw-muted);
+}
+
 /* --------------------------------------------------------- estimate */
 
 .qw-estimate {

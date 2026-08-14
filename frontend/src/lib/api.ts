@@ -39,6 +39,7 @@ export async function fetchConfig(): Promise<AppConfig> {
 export async function scan(
   images: SelectedImage[],
   scaleFactor: number,
+  creativity: number,
   outputSuffix: string,
   outputFormat: string,
 ): Promise<ScanResponse> {
@@ -47,6 +48,7 @@ export async function scan(
     form.append("images", img.file, img.file.name);
   }
   form.append("scale_factor", String(scaleFactor));
+  form.append("creativity", String(creativity));
   form.append("output_suffix", outputSuffix);
   form.append("output_format", outputFormat);
   return jsonOrThrow<ScanResponse>(

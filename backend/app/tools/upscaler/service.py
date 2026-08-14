@@ -13,7 +13,12 @@ from fastapi import UploadFile
 
 from ...config import (
     ALLOWED_OUTPUT_FORMATS,
-    SUPPORTED_SCALE_FACTORS,
+    CREATIVITY_DEFAULT,
+    CREATIVITY_MAX,
+    CREATIVITY_MIN,
+    SCALE_FACTOR_DEFAULT,
+    SCALE_FACTOR_MAX,
+    SCALE_FACTOR_MIN,
     settings,
 )
 from ...core.logging import get_logger
@@ -28,19 +33,30 @@ log = get_logger("qween.upscaler")
 
 @dataclass
 class ScanInputs:
-    scale_factor: int
+    scale_factor: float
+    creativity: float
     output_suffix: str
     output_format: str
 
 
-def normalise_scale_factor(raw: int | str | None) -> int:
+def normalise_scale_factor(raw: float | int | str | None) -> float:
+    """Clamp the scale factor to the Crystal Upscaler's [1, 200] range."""
     try:
-        value = int(raw) if raw is not None else 2
+        value = float(raw) if raw is not None else SCALE_FACTOR_DEFAULT
     except (TypeError, ValueError):
-        value = 2
-    if value not in SUPPORTED_SCALE_FACTORS:
-        value = 2
-    return value
+        value = SCALE_FACTOR_DEFAULT
+    value = max(SCALE_FACTOR_MIN, min(value, SCALE_FACTOR_MAX))
+    # Keep whole numbers tidy (2.0 -> 2) but allow fractional values.
+    return round(value, 2)
+
+
+def normalise_creativity(raw: float | int | str | None) -> float:
+    """Clamp creativity to the Crystal Upscaler's [0, 10] range."""
+    try:
+        value = float(raw) if raw is not None else CREATIVITY_DEFAULT
+    except (TypeError, ValueError):
+        value = CREATIVITY_DEFAULT
+    return round(max(CREATIVITY_MIN, min(value, CREATIVITY_MAX)), 2)
 
 
 def normalise_output_format(raw: str | None) -> str:
@@ -144,6 +160,7 @@ async def scan_images(
             Scan(
                 id=scan_id,
                 scale_factor=inputs.scale_factor,
+                creativity=inputs.creativity,
                 output_suffix=inputs.output_suffix,
                 output_format=inputs.output_format,
                 images=scan_images,
@@ -157,6 +174,7 @@ async def scan_images(
     return ScanResponse(
         scan_id=scan_id,
         scale_factor=inputs.scale_factor,
+        creativity=inputs.creativity,
         output_suffix=inputs.output_suffix,
         output_format=inputs.output_format,
         images=scanned,

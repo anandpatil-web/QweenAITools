@@ -9,7 +9,13 @@ import type { AppConfig } from "./lib/types";
 // visible; processing is disabled until a backend is connected.
 const FALLBACK_CONFIG: AppConfig = {
   usd_to_inr: 90,
-  supported_scale_factors: [2, 4],
+  scale_min: 1,
+  scale_max: 200,
+  scale_default: 2,
+  creativity_min: 0,
+  creativity_max: 10,
+  creativity_default: 0,
+  usd_per_megapixel: 0.016,
   allowed_concurrency: [1, 2, 4, 8],
   default_scale_factor: 2,
   default_concurrency: 4,

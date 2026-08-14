@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
 class SettingsUpdate(BaseModel):
-    default_scale_factor: int | None = None
+    default_scale_factor: float | None = None
     default_concurrency: int | None = None
     default_suffix: str | None = None
     default_output_format: str | None = None

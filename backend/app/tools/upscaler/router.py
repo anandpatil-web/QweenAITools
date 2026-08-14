@@ -11,7 +11,17 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from PIL import Image
 
-from ...config import ALLOWED_CONCURRENCY, SUPPORTED_SCALE_FACTORS, settings
+from ...config import (
+    ALLOWED_CONCURRENCY,
+    CRYSTAL_USD_PER_MEGAPIXEL,
+    CREATIVITY_DEFAULT,
+    CREATIVITY_MAX,
+    CREATIVITY_MIN,
+    SCALE_FACTOR_DEFAULT,
+    SCALE_FACTOR_MAX,
+    SCALE_FACTOR_MIN,
+    settings,
+)
 from ...core.logging import get_logger
 from ...jobs.manager import ImageJob, Job, manager
 from ...jobs.worker import retry_images, start_job_processing
@@ -27,6 +37,7 @@ from .models import (
 from .service import (
     ScanInputs,
     clamp_concurrency,
+    normalise_creativity,
     normalise_output_format,
     normalise_scale_factor,
     normalise_suffix,
@@ -57,7 +68,13 @@ async def get_config() -> dict:
     effective = await get_effective_settings()
     return {
         "usd_to_inr": effective["usd_to_inr"],
-        "supported_scale_factors": list(SUPPORTED_SCALE_FACTORS),
+        "scale_min": SCALE_FACTOR_MIN,
+        "scale_max": SCALE_FACTOR_MAX,
+        "scale_default": SCALE_FACTOR_DEFAULT,
+        "creativity_min": CREATIVITY_MIN,
+        "creativity_max": CREATIVITY_MAX,
+        "creativity_default": CREATIVITY_DEFAULT,
+        "usd_per_megapixel": CRYSTAL_USD_PER_MEGAPIXEL,
         "allowed_concurrency": list(ALLOWED_CONCURRENCY),
         "default_scale_factor": effective["default_scale_factor"],
         "default_concurrency": effective["default_concurrency"],
@@ -81,6 +98,7 @@ async def get_config() -> dict:
 async def scan(
     images: list[UploadFile] = File(...),
     scale_factor: str = Form("2"),
+    creativity: str = Form("0"),
     output_suffix: str = Form(""),
     output_format: str = Form("jpeg"),
 ) -> JSONResponse:
@@ -89,6 +107,7 @@ async def scan(
 
     inputs = ScanInputs(
         scale_factor=normalise_scale_factor(scale_factor),
+        creativity=normalise_creativity(creativity),
         output_suffix=normalise_suffix(output_suffix),
         output_format=normalise_output_format(output_format),
     )
@@ -128,6 +147,7 @@ def _to_job_response(job: Job) -> JobResponse:
     return JobResponse(
         job_id=job.id,
         scale_factor=job.scale_factor,
+        creativity=job.creativity,
         output_suffix=job.output_suffix,
         output_format=job.output_format,
         concurrency=job.concurrency,

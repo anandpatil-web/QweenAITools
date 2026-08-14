@@ -1,23 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AppConfig,
   ImageState,
   JobResponse,
-  ScanResponse,
-  ScannedImage,
   SelectedImage,
   SseEvent,
 } from "../../lib/types";
 import * as api from "../../lib/api";
 import { ApiError } from "../../lib/api";
+import { formatInr, formatUsd } from "../../lib/format";
 import { isAcceptedFile, loadSelectedImage, revokeSelected } from "../../lib/images";
 import { Dropzone } from "./Dropzone";
 import { ImageGrid } from "./ImageGrid";
 import { SettingsBar } from "./SettingsBar";
-import { EstimatePanel } from "./EstimatePanel";
 import { JobView } from "./JobView";
 
-type Phase = "select" | "estimate" | "job";
+type Phase = "select" | "job";
 
 interface Props {
   config: AppConfig;
@@ -28,20 +26,17 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
   const [phase, setPhase] = useState<Phase>("select");
   const [selected, setSelected] = useState<SelectedImage[]>([]);
   const [scale, setScale] = useState(config.default_scale_factor);
+  const [creativity, setCreativity] = useState(config.creativity_default);
   const [suffix, setSuffix] = useState(config.default_suffix ?? "");
   const [concurrency, setConcurrency] = useState(config.default_concurrency);
 
-  const [scanning, setScanning] = useState(false);
-  const [scan, setScan] = useState<ScanResponse | null>(null);
-  const [estimatesByLocal, setEstimatesByLocal] = useState<Record<string, ScannedImage>>({});
-  const [localByScanId, setLocalByScanId] = useState<Record<string, SelectedImage>>({});
-  const [error, setError] = useState<string | null>(null);
-
-  const [starting, setStarting] = useState(false);
+  const [running, setRunning] = useState(false);
   const [job, setJob] = useState<JobResponse | null>(null);
   const [finished, setFinished] = useState(false);
+  const [localByScanId, setLocalByScanId] = useState<Record<string, SelectedImage>>({});
   const [retrying, setRetrying] = useState<Set<string>>(new Set());
   const [retryingAll, setRetryingAll] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const esRef = useRef<EventSource | null>(null);
@@ -50,17 +45,10 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
-    window.setTimeout(() => setToast(null), 3200);
+    window.setTimeout(() => setToast(null), 3600);
   }, []);
 
   // --- selection ---------------------------------------------------------
-
-  const invalidateScan = useCallback(() => {
-    setScan(null);
-    setEstimatesByLocal({});
-    setLocalByScanId({});
-    if (phase === "estimate") setPhase("select");
-  }, [phase]);
 
   const addFiles = useCallback(
     async (files: File[]) => {
@@ -71,7 +59,6 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
           `${rejected} file${rejected > 1 ? "s were" : " was"} skipped — only JPG, PNG or WEBP are supported.`,
         );
       }
-      invalidateScan();
       const loaded: SelectedImage[] = [];
       for (const file of accepted) {
         try {
@@ -82,61 +69,16 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
       }
       if (loaded.length) setSelected((prev) => [...prev, ...loaded]);
     },
-    [invalidateScan, showToast],
+    [showToast],
   );
 
-  const removeImage = useCallback(
-    (localId: string) => {
-      setSelected((prev) => {
-        const target = prev.find((p) => p.localId === localId);
-        if (target) revokeSelected(target);
-        return prev.filter((p) => p.localId !== localId);
-      });
-      invalidateScan();
-    },
-    [invalidateScan],
-  );
-
-  // --- scan / estimate ---------------------------------------------------
-
-  const runScan = useCallback(async () => {
-    if (!selected.length) return;
-    setScanning(true);
-    setError(null);
-    try {
-      const result = await api.scan(selected, scale, suffix, "jpeg");
-      // Map scanned ids back to their local selection (order preserved,
-      // rejected files skipped) so we can show the original as "before".
-      const byLocal: Record<string, ScannedImage> = {};
-      const byScanId: Record<string, SelectedImage> = {};
-      let pointer = 0;
-      for (const scanned of result.images) {
-        while (
-          pointer < selected.length &&
-          selected[pointer].file.name !== scanned.filename
-        ) {
-          pointer += 1;
-        }
-        if (pointer < selected.length) {
-          byLocal[selected[pointer].localId] = scanned;
-          byScanId[scanned.id] = selected[pointer];
-          pointer += 1;
-        }
-      }
-      setEstimatesByLocal(byLocal);
-      setLocalByScanId(byScanId);
-      setScan(result);
-      if (result.total_images > 0) {
-        setPhase("estimate");
-      } else {
-        showToast("No usable images were found. Please check the files.");
-      }
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Couldn't scan the images.");
-    } finally {
-      setScanning(false);
-    }
-  }, [selected, scale, suffix, showToast]);
+  const removeImage = useCallback((localId: string) => {
+    setSelected((prev) => {
+      const target = prev.find((p) => p.localId === localId);
+      if (target) revokeSelected(target);
+      return prev.filter((p) => p.localId !== localId);
+    });
+  }, []);
 
   // --- SSE ---------------------------------------------------------------
 
@@ -176,7 +118,11 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
                   status: evt.status,
                   result_id: evt.result_id ?? i.result_id,
                   output_filename: evt.output_filename ?? i.output_filename,
-                  error: evt.error ?? (evt.status === "failed" || evt.status === "timeout" ? i.error : null),
+                  error:
+                    evt.error ??
+                    (evt.status === "failed" || evt.status === "timeout"
+                      ? i.error
+                      : null),
                 }
               : i,
           ),
@@ -218,32 +164,63 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
         }
       };
       es.onerror = () => {
-        // The stream closes itself after completion; only treat unexpected
-        // drops as errors by falling back to a one-off poll.
         es.close();
       };
     },
     [applyEvent],
   );
 
-  // --- run / retry -------------------------------------------------------
+  // --- run (scan + start, no separate estimate step) ---------------------
 
-  const confirmRun = useCallback(async () => {
-    if (!scan) return;
-    setStarting(true);
+  const upscaleNow = useCallback(async () => {
+    if (!selected.length || running || previewMode) return;
+    setRunning(true);
     setError(null);
     try {
-      const started = await api.startJob(scan.scan_id, concurrency);
+      // Validate + upload happens here; we just don't show a separate screen.
+      const result = await api.scan(selected, scale, creativity, suffix, "jpeg");
+
+      if (result.errors.length > 0) {
+        showToast(
+          `${result.errors.length} image${result.errors.length > 1 ? "s" : ""} skipped (unsupported or unreadable).`,
+        );
+      }
+      if (result.total_images === 0) {
+        setError("None of the selected images could be used. Please check the files.");
+        return;
+      }
+
+      // Map scanned ids back to their local selection (order preserved,
+      // rejected files skipped) so we can show the original as "before".
+      const byScanId: Record<string, SelectedImage> = {};
+      let pointer = 0;
+      for (const scanned of result.images) {
+        while (
+          pointer < selected.length &&
+          selected[pointer].file.name !== scanned.filename
+        ) {
+          pointer += 1;
+        }
+        if (pointer < selected.length) {
+          byScanId[scanned.id] = selected[pointer];
+          pointer += 1;
+        }
+      }
+      setLocalByScanId(byScanId);
+
+      const started = await api.startJob(result.scan_id, concurrency);
       setJob(started);
       setFinished(false);
       setPhase("job");
       connectStream(started.job_id);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Couldn't start processing.");
+      setError(e instanceof ApiError ? e.message : "Couldn't start upscaling.");
     } finally {
-      setStarting(false);
+      setRunning(false);
     }
-  }, [scan, concurrency, connectStream]);
+  }, [selected, running, previewMode, scale, creativity, suffix, concurrency, connectStream, showToast]);
+
+  // --- retry / reset -----------------------------------------------------
 
   const doRetry = useCallback(
     async (imageIds?: string[]) => {
@@ -268,11 +245,9 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
     esRef.current?.close();
     selectedRef.current.forEach(revokeSelected);
     setSelected([]);
-    setScan(null);
-    setEstimatesByLocal({});
-    setLocalByScanId({});
     setJob(null);
     setFinished(false);
+    setLocalByScanId({});
     setRetrying(new Set());
     setRetryingAll(false);
     setError(null);
@@ -285,8 +260,15 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
     };
   }, []);
 
-  const localByJobImageId = useMemo(() => localByScanId, [localByScanId]);
   const sampleName = selected[0]?.file.name ?? "";
+  // Cost = $/MP × output megapixels, where output = input × scale². Computed
+  // live from each image's real dimensions (instant, no server round-trip).
+  const totalUsd = selected.reduce(
+    (sum, img) =>
+      sum + config.usd_per_megapixel * ((img.width * img.height * scale * scale) / 1_000_000),
+    0,
+  );
+  const totalInr = totalUsd * config.usd_to_inr;
 
   // --- render ------------------------------------------------------------
 
@@ -304,9 +286,8 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
       {!previewMode && !config.fal_configured && (
         <div className="qw-banner qw-banner--warn">
           <span>
-            <b>FAL_KEY is not configured on the backend.</b> You can select
-            images and see cost estimates, but processing will fail until a key
-            is added to <code>backend/.env</code>.
+            <b>FAL_KEY is not configured on the backend.</b> Upscaling will fail
+            until a key is added.
           </span>
         </div>
       )}
@@ -334,60 +315,39 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
               <SettingsBar
                 config={config}
                 scale={scale}
+                creativity={creativity}
                 suffix={suffix}
                 concurrency={concurrency}
                 sampleName={sampleName}
-                onScale={(v) => {
-                  setScale(v);
-                  invalidateScan();
-                }}
-                onSuffix={(v) => {
-                  setSuffix(v);
-                  invalidateScan();
-                }}
+                onScale={setScale}
+                onCreativity={setCreativity}
+                onSuffix={setSuffix}
                 onConcurrency={setConcurrency}
               />
 
-              {scan && scan.errors.length > 0 && (
-                <div className="qw-scan-errors">
-                  <div className="qw-scan-errors__title">
-                    {scan.errors.length} image{scan.errors.length > 1 ? "s" : ""} skipped
-                  </div>
-                  <ul>
-                    {scan.errors.map((er, idx) => (
-                      <li key={idx}>
-                        <b>{er.filename}</b> — {er.error}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <ImageGrid images={selected} onRemove={removeImage} />
 
-              <ImageGrid
-                images={selected}
-                estimates={estimatesByLocal}
-                onRemove={removeImage}
-              />
-
-              <div className="qw-actions-row">
-                <button
-                  className="qw-btn qw-btn--ghost"
-                  onClick={startOver}
-                >
+              <div className="qw-runbar">
+                <button className="qw-btn qw-btn--ghost" onClick={startOver}>
                   Clear all
                 </button>
                 <div className="qw-spacer" />
+                <div className="qw-runcost">
+                  <span className="qw-runcost__label">Cost</span>
+                  <b className="qw-runcost__usd">{formatUsd(totalUsd)}</b>
+                  <span className="qw-runcost__inr">≈ {formatInr(totalInr)}</span>
+                </div>
                 <button
-                  className="qw-btn"
-                  onClick={runScan}
-                  disabled={scanning || selected.length === 0 || previewMode}
+                  className="qw-btn qw-btn--gold"
+                  onClick={upscaleNow}
+                  disabled={running || selected.length === 0 || previewMode}
                   title={
-                    previewMode
-                      ? "Connect a backend to scan and upscale"
-                      : undefined
+                    previewMode ? "Connect a backend to upscale" : undefined
                   }
                 >
-                  {scanning ? "Scanning…" : "Scan & Estimate"}
+                  {running
+                    ? "Starting…"
+                    : `Upscale ${selected.length} image${selected.length > 1 ? "s" : ""}`}
                 </button>
               </div>
             </>
@@ -395,20 +355,11 @@ export function UpscalerTool({ config, previewMode = false }: Props) {
         </div>
       )}
 
-      {phase === "estimate" && scan && (
-        <EstimatePanel
-          scan={scan}
-          busy={starting}
-          onBack={() => setPhase("select")}
-          onConfirm={confirmRun}
-        />
-      )}
-
       {phase === "job" && job && (
         <JobView
           job={job}
           finished={finished}
-          localById={localByJobImageId}
+          localById={localByScanId}
           retrying={retrying}
           retryingAll={retryingAll}
           onRetry={(id) => doRetry([id])}

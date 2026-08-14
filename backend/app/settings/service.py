@@ -12,7 +12,9 @@ from typing import Any
 
 from ..config import (
     ALLOWED_OUTPUT_FORMATS,
-    SUPPORTED_SCALE_FACTORS,
+    SCALE_FACTOR_DEFAULT,
+    SCALE_FACTOR_MAX,
+    SCALE_FACTOR_MIN,
     settings,
 )
 from ..core.logging import get_logger
@@ -34,7 +36,7 @@ EDITABLE_KEYS = (
 
 def _env_defaults() -> dict[str, Any]:
     return {
-        "default_scale_factor": 2,
+        "default_scale_factor": SCALE_FACTOR_DEFAULT,
         "default_concurrency": min(4, settings.max_concurrency),
         "default_suffix": "",
         "default_output_format": "jpeg",
@@ -51,9 +53,9 @@ def _coerce(values: dict[str, Any]) -> dict[str, Any]:
         raw = values[key]
         try:
             if key == "default_scale_factor":
-                v = int(raw)
-                if v in SUPPORTED_SCALE_FACTORS:
-                    out[key] = v
+                v = float(raw)
+                if SCALE_FACTOR_MIN <= v <= SCALE_FACTOR_MAX:
+                    out[key] = round(v, 2)
             elif key == "default_concurrency":
                 v = int(raw)
                 out[key] = max(1, min(v, settings.max_concurrency, 8))

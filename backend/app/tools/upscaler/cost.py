@@ -21,7 +21,7 @@ from ...config import CRYSTAL_USD_PER_MEGAPIXEL, settings
 class CostBreakdown:
     input_width: int
     input_height: int
-    scale_factor: int
+    scale_factor: float
     output_width: int
     output_height: int
     input_megapixels: float
@@ -33,15 +33,15 @@ def _megapixels(width: int, height: int) -> float:
     return (width * height) / 1_000_000.0
 
 
-def calculate_cost(width: int, height: int, scale_factor: int) -> CostBreakdown:
+def calculate_cost(width: int, height: int, scale_factor: float) -> CostBreakdown:
     """Compute the authoritative per-image cost breakdown."""
     if width <= 0 or height <= 0:
         raise ValueError("Image dimensions must be positive.")
     if scale_factor <= 0:
         raise ValueError("Scale factor must be positive.")
 
-    output_width = width * scale_factor
-    output_height = height * scale_factor
+    output_width = round(width * scale_factor)
+    output_height = round(height * scale_factor)
     input_mp = _megapixels(width, height)
     output_mp = _megapixels(output_width, output_height)
     cost = output_mp * CRYSTAL_USD_PER_MEGAPIXEL

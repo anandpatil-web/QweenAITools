@@ -42,7 +42,8 @@ class ScanError(BaseModel):
 
 class ScanResponse(BaseModel):
     scan_id: str
-    scale_factor: int
+    scale_factor: float
+    creativity: float
     output_suffix: str
     output_format: str
     images: list[ScannedImage]
@@ -79,7 +80,8 @@ class ImageState(BaseModel):
 
 class JobResponse(BaseModel):
     job_id: str
-    scale_factor: int
+    scale_factor: float
+    creativity: float
     output_suffix: str
     output_format: str
     concurrency: int

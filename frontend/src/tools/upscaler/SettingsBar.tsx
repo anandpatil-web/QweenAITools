@@ -3,11 +3,13 @@ import type { AppConfig } from "../../lib/types";
 interface Props {
   config: AppConfig;
   scale: number;
+  creativity: number;
   suffix: string;
   concurrency: number;
   sampleName: string;
   disabled?: boolean;
   onScale: (v: number) => void;
+  onCreativity: (v: number) => void;
   onSuffix: (v: string) => void;
   onConcurrency: (v: number) => void;
 }
@@ -18,32 +20,81 @@ function previewName(sample: string, suffix: string): string {
   return `${sample.slice(0, dot)}${suffix}${sample.slice(dot)}`;
 }
 
+function clampRound(v: number, min: number, max: number): number {
+  if (Number.isNaN(v)) return min;
+  return Math.max(min, Math.min(max, v));
+}
+
 export function SettingsBar({
   config,
   scale,
+  creativity,
   suffix,
   concurrency,
   sampleName,
   disabled,
   onScale,
+  onCreativity,
   onSuffix,
   onConcurrency,
 }: Props) {
   return (
     <div className="qw-settings">
       <div className="qw-field">
-        <span className="qw-field__label">Scale</span>
-        <div className="qw-seg">
-          {config.supported_scale_factors.map((s) => (
-            <button
-              key={s}
-              className={s === scale ? "is-on" : ""}
-              onClick={() => onScale(s)}
-              disabled={disabled}
-            >
-              {s}×
-            </button>
-          ))}
+        <span className="qw-field__label">Scale factor · {scale}×</span>
+        <div className="qw-slider">
+          <input
+            className="qw-range"
+            type="range"
+            min={config.scale_min}
+            max={config.scale_max}
+            step={1}
+            value={scale}
+            disabled={disabled}
+            onChange={(e) => onScale(Number(e.target.value))}
+          />
+          <input
+            className="qw-input qw-input--num"
+            type="number"
+            min={config.scale_min}
+            max={config.scale_max}
+            step={0.5}
+            value={scale}
+            disabled={disabled}
+            onChange={(e) =>
+              onScale(clampRound(parseFloat(e.target.value), config.scale_min, config.scale_max))
+            }
+          />
+        </div>
+      </div>
+
+      <div className="qw-field">
+        <span className="qw-field__label">Creativity · {creativity}</span>
+        <div className="qw-slider">
+          <input
+            className="qw-range"
+            type="range"
+            min={config.creativity_min}
+            max={config.creativity_max}
+            step={0.5}
+            value={creativity}
+            disabled={disabled}
+            onChange={(e) => onCreativity(Number(e.target.value))}
+          />
+          <input
+            className="qw-input qw-input--num"
+            type="number"
+            min={config.creativity_min}
+            max={config.creativity_max}
+            step={0.5}
+            value={creativity}
+            disabled={disabled}
+            onChange={(e) =>
+              onCreativity(
+                clampRound(parseFloat(e.target.value), config.creativity_min, config.creativity_max),
+              )
+            }
+          />
         </div>
       </div>
 

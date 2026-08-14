@@ -9,7 +9,13 @@ export type ImageStatus =
 
 export interface AppConfig {
   usd_to_inr: number;
-  supported_scale_factors: number[];
+  scale_min: number;
+  scale_max: number;
+  scale_default: number;
+  creativity_min: number;
+  creativity_max: number;
+  creativity_default: number;
+  usd_per_megapixel: number;
   allowed_concurrency: number[];
   default_scale_factor: number;
   default_concurrency: number;

@@ -35,7 +35,7 @@ class FakeProvider:
         # Identify the image via the monkeypatched context set in _process_one.
         return "https://fake/uploaded"
 
-    async def upscale(self, image_url, scale_factor, output_format):
+    async def upscale(self, image_url, scale_factor, output_format, creativity=0.0):
         img_id = self.current
         if img_id in self.hang_ids:
             await asyncio.sleep(10)
@@ -65,8 +65,8 @@ def _build_job(mgr: JobManager, n: int):
                 output_megapixels=0.016, estimated_cost_usd=0.0003, input_path=p,
             )
         )
-    mgr.register_scan(Scan(id=scan_id, scale_factor=2, output_suffix="",
-                           output_format="jpeg", images=images))
+    mgr.register_scan(Scan(id=scan_id, scale_factor=2, creativity=0.0,
+                           output_suffix="", output_format="jpeg", images=images))
     return scan_id, [im.id for im in images]
 
 

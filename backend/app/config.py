@@ -43,8 +43,15 @@ def _get_float(name: str, default: float) -> float:
 # Crystal Upscaler price: USD per output megapixel.
 CRYSTAL_USD_PER_MEGAPIXEL = 0.016
 
-# Scale factors supported by the Crystal Upscaler.
-SUPPORTED_SCALE_FACTORS = (2, 4)
+# Scale factor supported by the Crystal Upscaler: a float in [1, 200].
+SCALE_FACTOR_MIN = 1.0
+SCALE_FACTOR_MAX = 200.0
+SCALE_FACTOR_DEFAULT = 2.0
+
+# Creativity level supported by the Crystal Upscaler: a float in [0, 10].
+CREATIVITY_MIN = 0.0
+CREATIVITY_MAX = 10.0
+CREATIVITY_DEFAULT = 0.0
 
 # Allowed concurrency choices shown in the UI.
 ALLOWED_CONCURRENCY = (1, 2, 4, 8)

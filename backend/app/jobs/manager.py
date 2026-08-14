@@ -53,7 +53,8 @@ class ScanImage:
 @dataclass
 class Scan:
     id: str
-    scale_factor: int
+    scale_factor: float
+    creativity: float
     output_suffix: str
     output_format: str
     images: list[ScanImage]
@@ -83,7 +84,8 @@ class ImageJob:
 @dataclass
 class Job:
     id: str
-    scale_factor: int
+    scale_factor: float
+    creativity: float
     output_suffix: str
     output_format: str
     concurrency: int
@@ -172,6 +174,7 @@ class JobManager:
             job = Job(
                 id=scan_id,
                 scale_factor=scan.scale_factor,
+                creativity=scan.creativity,
                 output_suffix=scan.output_suffix,
                 output_format=scan.output_format,
                 concurrency=concurrency,

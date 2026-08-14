@@ -191,13 +191,18 @@ class FalProvider:
             )
 
     async def upscale(
-        self, image_url: str, scale_factor: int, output_format: str
+        self,
+        image_url: str,
+        scale_factor: float,
+        output_format: str,
+        creativity: float = 0.0,
     ) -> UpscaleResult:
         """Run the Crystal Upscaler and return the resulting image URL."""
         client = self._require_client()
         arguments: dict[str, Any] = {
             "image_url": image_url,
             "scale_factor": scale_factor,
+            "creativity": creativity,
             "output_format": _fal_output_format(output_format),
         }
         try:

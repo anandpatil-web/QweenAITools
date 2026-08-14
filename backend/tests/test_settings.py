@@ -34,7 +34,7 @@ async def test_update_rejected_when_unconfigured():
 def test_coerce_validates_and_clamps():
     out = service._coerce(
         {
-            "default_scale_factor": 3,  # invalid -> dropped
+            "default_scale_factor": 500,  # out of [1,200] range -> dropped
             "default_concurrency": 99,  # clamped to <= max(8)
             "default_suffix": "_x2",
             "default_output_format": "jpg",  # normalised to jpeg
@@ -50,6 +50,7 @@ def test_coerce_validates_and_clamps():
     assert "bogus" not in out
 
 
-def test_coerce_accepts_supported_scale():
-    out = service._coerce({"default_scale_factor": 4})
-    assert out["default_scale_factor"] == 4
+def test_coerce_accepts_scale_in_range():
+    assert service._coerce({"default_scale_factor": 4})["default_scale_factor"] == 4
+    assert service._coerce({"default_scale_factor": 2.5})["default_scale_factor"] == 2.5
+    assert service._coerce({"default_scale_factor": 16})["default_scale_factor"] == 16

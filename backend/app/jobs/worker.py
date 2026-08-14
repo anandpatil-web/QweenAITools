@@ -73,7 +73,7 @@ async def _process_one(job: Job, image: ImageJob) -> None:
         # --- Stage 2: upscale ---
         _set_status(job, image, ImageStatus.PROCESSING)
         result = await provider.upscale(
-            uploaded_url, job.scale_factor, job.output_format
+            uploaded_url, job.scale_factor, job.output_format, job.creativity
         )
 
         # --- Stage 3: download result ---
