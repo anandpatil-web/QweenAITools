@@ -28,6 +28,15 @@ log = get_logger("qween.provider.fal")
 
 CRYSTAL_UPSCALER_APP = "clarityai/crystal-upscaler"
 
+# The Crystal Upscaler only accepts these literal output_format values. Our
+# internal canonical name is "jpeg" (matching MIME/Pillow), so we translate at
+# the fal boundary: fal rejects "jpeg" with a 422 and wants "jpg".
+_FAL_OUTPUT_FORMAT = {"jpeg": "jpg", "jpg": "jpg", "png": "png"}
+
+
+def _fal_output_format(value: str) -> str:
+    return _FAL_OUTPUT_FORMAT.get((value or "").lower(), "jpg")
+
 
 # ---------------------------------------------------------------------------
 # Error taxonomy
@@ -189,7 +198,7 @@ class FalProvider:
         arguments: dict[str, Any] = {
             "image_url": image_url,
             "scale_factor": scale_factor,
-            "output_format": output_format,
+            "output_format": _fal_output_format(output_format),
         }
         try:
             result = await client.subscribe(CRYSTAL_UPSCALER_APP, arguments=arguments)

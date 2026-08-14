@@ -111,3 +111,14 @@ def test_output_filename_sanitizes_unsafe():
 def test_safe_upload_name_is_generic():
     assert safe_upload_name(".jpg") == "input.jpg"
     assert safe_upload_name(".weird") == "input.jpg"
+
+
+def test_fal_output_format_maps_jpeg_to_jpg():
+    # The Crystal Upscaler rejects "jpeg" and requires "jpg" / "png".
+    from app.providers.fal.client import _fal_output_format
+
+    assert _fal_output_format("jpeg") == "jpg"
+    assert _fal_output_format("jpg") == "jpg"
+    assert _fal_output_format("png") == "png"
+    assert _fal_output_format("") == "jpg"
+    assert _fal_output_format("weird") == "jpg"
