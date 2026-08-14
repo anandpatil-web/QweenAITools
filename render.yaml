@@ -1,0 +1,41 @@
+# Render blueprint for the QWEEN AI Tools backend (FastAPI).
+# Render runs a persistent process, so SSE, background job workers, in-memory
+# state and local temp storage all work — unlike Vercel's serverless model.
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo. Then set the
+# secret env vars (FAL_KEY, and optionally the Supabase key) in the dashboard.
+services:
+  - type: web
+    name: qween-ai-tools-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      # Set your fal.ai key in the Render dashboard (marked secret).
+      - key: FAL_KEY
+        sync: false
+      # Allow the deployed Vercel frontend to call this backend. Set the exact
+      # production URL here, and/or use CORS_ORIGIN_REGEX for preview URLs.
+      - key: CORS_ORIGINS
+        value: "https://qween-ai-tools.vercel.app"
+      - key: CORS_ORIGIN_REGEX
+        value: "https://qween-ai-tools-.*\\.vercel\\.app"
+      - key: USD_TO_INR
+        value: "90"
+      - key: MAX_CONCURRENCY
+        value: "4"
+      - key: IMAGE_TIMEOUT_SECONDS
+        value: "180"
+      - key: MAX_FILE_SIZE_MB
+        value: "50"
+      - key: RESULT_TTL_MINUTES
+        value: "60"
+      # Optional Supabase settings/prompts store — set the secret in dashboard.
+      - key: SUPABASE_URL
+        value: "https://icszdwcdpipuarsctqfo.supabase.co"
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

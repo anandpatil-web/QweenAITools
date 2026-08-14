@@ -89,6 +89,10 @@ class Settings:
             if origin.strip()
         )
     )
+    # Optional regex to allow a family of origins (e.g. Vercel preview URLs).
+    cors_origin_regex: str = field(
+        default_factory=lambda: os.getenv("CORS_ORIGIN_REGEX", "").strip()
+    )
 
     @property
     def max_file_size_bytes(self) -> int:
