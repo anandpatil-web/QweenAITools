@@ -24,13 +24,50 @@ def test_output_size_clamps_extreme_aspect():
 def test_prompt_full_vs_masked():
     full = build_skinfix_prompt(SkinFixMode.FULL, SkinFixStrength.STANDARD)
     masked = build_skinfix_prompt(SkinFixMode.MASKED, SkinFixStrength.STANDARD)
-    assert "this photo" in full
+    assert "retoucher" in full
     assert "masked region" in masked
+    assert "masked region" not in full
     assert full != masked
 
 
 def test_prompt_subtle_adds_suffix():
     subtle = build_skinfix_prompt(SkinFixMode.FULL, SkinFixStrength.SUBTLE)
     standard = build_skinfix_prompt(SkinFixMode.FULL, SkinFixStrength.STANDARD)
-    assert "minimum change" in subtle
-    assert "minimum change" not in standard
+    assert "minimum" in subtle
+    assert "minimum" not in standard
+
+
+def test_composite_keeps_original_outside_mask():
+    import io
+
+    from PIL import Image
+
+    from app.tools.skinfix.service import _composite_masked
+
+    size = (64, 64)
+
+    def png(color):
+        b = io.BytesIO()
+        Image.new("RGB", size, color).save(b, "PNG")
+        return b.getvalue()
+
+    orig = png((200, 0, 0))  # red original
+    res = png((0, 0, 200))  # blue model output
+
+    # Fully opaque mask = preserve everything -> output must equal original.
+    opaque = io.BytesIO()
+    Image.new("RGBA", size, (0, 0, 0, 255)).save(opaque, "PNG")
+    out = _composite_masked(
+        original_png=orig, result_png=res, mask_png=opaque.getvalue(), size=size
+    )
+    px = Image.open(io.BytesIO(out)).convert("RGB").getpixel((32, 32))
+    assert px[0] > 150 and px[2] < 60  # still red
+
+    # Fully transparent mask = editable everywhere -> output must equal result.
+    transparent = io.BytesIO()
+    Image.new("RGBA", size, (0, 0, 0, 0)).save(transparent, "PNG")
+    out2 = _composite_masked(
+        original_png=orig, result_png=res, mask_png=transparent.getvalue(), size=size
+    )
+    px2 = Image.open(io.BytesIO(out2)).convert("RGB").getpixel((32, 32))
+    assert px2[2] > 150 and px2[0] < 60  # now blue

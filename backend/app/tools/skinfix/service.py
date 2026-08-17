@@ -12,7 +12,7 @@ import io
 import uuid
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from ...core.logging import get_logger
 from ...providers.openai import get_openai_provider
@@ -99,17 +99,30 @@ async def run_skin_fix(
         mask_bytes=prepared_mask,
     )
 
+    # In masked mode, composite the model output back over the ORIGINAL through
+    # the mask so only the brushed region can change — everything else stays
+    # pixel-identical to the input. (gpt-image edits otherwise re-render the
+    # whole frame.) A feathered edge makes the repair blend seamlessly.
+    final_bytes = result.image_bytes
+    if mode is SkinFixMode.MASKED and prepared_mask is not None:
+        final_bytes = _composite_masked(
+            original_png=prepared_image,
+            result_png=result.image_bytes,
+            mask_png=prepared_mask,
+            size=(target_w, target_h),
+        )
+
     # Persist output and read its real dimensions.
     result_id = _new_result_id()
     out_path = storage.output_path(result_id, "skinfix", ".png")
-    out_path.write_bytes(result.image_bytes)
+    out_path.write_bytes(final_bytes)
     _results[result_id] = out_path
 
-    with Image.open(io.BytesIO(result.image_bytes)) as img:
+    with Image.open(io.BytesIO(final_bytes)) as img:
         out_w, out_h = img.size
 
     output_filename = build_output_filename(filename, "_skinfix", "png")
-    data_url = "data:image/png;base64," + base64.b64encode(result.image_bytes).decode()
+    data_url = "data:image/png;base64," + base64.b64encode(final_bytes).decode()
     log.info(
         "skinfix done result_id=%s mode=%s strength=%s size=%s out=%dx%d",
         result_id,
@@ -157,6 +170,34 @@ def _prepare_mask(data: bytes, target: tuple[int, int]) -> bytes:
             return buf.getvalue()
     except Exception as exc:  # noqa: BLE001
         raise ImageValidationError("The brushed mask could not be read.") from exc
+
+
+def _composite_masked(
+    *, original_png: bytes, result_png: bytes, mask_png: bytes, size: tuple[int, int]
+) -> bytes:
+    """Keep the model output only inside the (feathered) editable mask region;
+    everywhere else use the original pixels exactly."""
+    orig = Image.open(io.BytesIO(original_png)).convert("RGB")
+    res = Image.open(io.BytesIO(result_png)).convert("RGB")
+    mask = Image.open(io.BytesIO(mask_png)).convert("RGBA")
+    if orig.size != size:
+        orig = orig.resize(size, Image.LANCZOS)
+    if res.size != size:
+        res = res.resize(size, Image.LANCZOS)
+    if mask.size != size:
+        mask = mask.resize(size, Image.LANCZOS)
+
+    # Mask alpha: opaque (255) = preserve, transparent (0) = editable.
+    # Editable weight = 255 where painted; feather for a seamless transition.
+    alpha = mask.split()[3]
+    editable = alpha.point(lambda v: 255 - v)
+    feather = max(2, round(min(size) / 200))
+    editable = editable.filter(ImageFilter.GaussianBlur(feather))
+
+    out = Image.composite(res, orig, editable)  # res where editable=255, orig where 0
+    buf = io.BytesIO()
+    out.save(buf, format="PNG")
+    return buf.getvalue()
 
 
 def make_preview(path: Path, max_edge: int = 1600, quality: int = 82) -> bytes:
