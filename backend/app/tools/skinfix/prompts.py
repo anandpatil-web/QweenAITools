@@ -1,54 +1,60 @@
-"""Prompt builder for the Skin Fix tool.
+"""Prompt builder for the Skin Fix tool — QWEEN natural_skin_fixer v2.0.
 
-Encodes the QWEEN "natural_skin_fixer" brief: a high-end jewellery retoucher
-that corrects excessive dryness/flaking while *preserving* real skin texture,
-pores and imperfections — explicitly NOT beautifying. The backend additionally
-composites the model output back over the original through the mask, so only
-the brushed region can ever change (see service._composite_masked).
+v2 strategy: the *source* skin texture may itself be unnatural/AI-generated
+(flaky, cracked, over-detailed), so it is NOT preserved — the skin surface is
+reconstructed into believable natural human skin. Tone, undertone, anatomy,
+jewellery, lighting, composition and background ARE preserved. The backend
+additionally composites the output back over the original through the mask, so
+in masked mode only the brushed region is reconstructed.
 """
 from __future__ import annotations
 
 from .models import SkinFixMode, SkinFixStrength
 
 _BASE = (
-    "You are a professional high-end jewellery retoucher specializing in realistic "
-    "skin correction. Objective: correct excessive dryness, flaking, cracking and "
-    "harsh exaggerated skin texture while keeping the skin completely natural and "
-    "photorealistic, as if shot on a high-quality camera. "
-    "Only reduce excessive dryness, visible flaking, exaggerated micro-texture, harsh "
-    "surface cracking, and distracting deep micro-lines caused by dryness; subtly "
-    "soften rough transitions and restore believable natural skin texture. "
-    "Keep the skin naturally moisturized and healthy while RETAINING believable pores, "
-    "fine lines, wrinkles, creases, tonal variation and natural imperfections. "
-    "Do NOT change skin colour, undertone or tone; do NOT change hand, finger or body "
-    "anatomy, proportions or nails; do NOT change jewellery or its position, clothing, "
-    "background, lighting, shadows, composition, camera perspective or identity. "
-    "Correction must be SUBTLE: low-to-medium texture reduction, very low smoothing, "
-    "high retention of natural texture, zero beautification. "
-    "Avoid at all costs: plastic, waxy, porcelain, airbrushed, over-smoothed or blurred "
-    "skin, beauty-filter look, loss of pores or fine lines, fake or synthetic skin "
-    "texture, repeating / tiled / cross-hatched / mesh texture, artificial gloss, wet "
-    "skin, skin whitening or tone alteration, anatomy or finger deformation, and any "
-    "jewellery, background or lighting alteration. "
-    "Golden rule: do not make the skin beautiful — make the existing skin look naturally "
-    "healthy while preserving its real texture and imperfections."
+    "Edit the provided image to replace unnatural, AI-generated skin texture with "
+    "realistic, natural human skin. The source skin texture may be excessively flaky, "
+    "dry, cracked, rough or overly detailed, so do NOT treat the existing skin texture "
+    "as something that must be preserved — reconstruct the skin surface where necessary. "
+    "Preserve the person's skin tone, undertone, anatomy, proportions, hands, fingers, "
+    "nails, jewellery, lighting, shadows, highlights, composition, background and camera "
+    "perspective exactly. "
+    "Reconstruct believable natural human skin: subtle realistic pores and fine texture "
+    "with natural tonal variation, no dryness, no flaking, no cracking, low roughness, "
+    "very low smoothing, a natural matte finish with realistic light response. Keep "
+    "subtle believable human imperfections, but remove obvious AI artifacts and "
+    "unnatural texture. "
+    "Skin must look like real human skin photographed with a high-quality camera. Do not "
+    "copy the flaky or cracked texture from the source and do not preserve AI-generated "
+    "artifacts. Do not make the skin perfectly smooth or remove all pores. No porcelain, "
+    "plastic, waxy, glossy, airbrushed, over-smoothed or blurred skin; no beauty-filter "
+    "retouching; no artificial polish or gloss; no wet skin. Do not whiten, brighten, "
+    "recolour or change the natural skin tone. Maintain realistic texture variation "
+    "across the hand and keep joints, knuckles, folds and creases anatomically "
+    "believable. "
+    "Do not modify jewellery in any way (size, shape, position, material, stones, "
+    "reflections, details), hand or finger anatomy, finger length/width/joints/"
+    "proportions, nails, clothing, background, composition, camera angle, or lighting "
+    "direction and intensity. "
+    "Golden rule: preserve the person and the photograph, not the bad skin texture. "
+    "Reconstruct the skin surface when the source texture is unnatural, while keeping the "
+    "result subtle, realistic and completely human — a high-quality photograph, not an "
+    "AI-generated skin replacement."
 )
 
 _MASKED_PREFIX = (
-    "Correct the skin only inside the editable masked region and leave everything "
+    "Reconstruct the skin only inside the editable masked region and leave everything "
     "outside it completely untouched. "
 )
 
 _SUBTLE_SUFFIX = (
-    " Apply the minimum correction necessary; when in doubt, leave the skin as it is."
+    " Keep the reconstruction restrained — correct the unnatural texture with the "
+    "lightest touch that still removes the flaking and cracking."
 )
 
 
 def build_skinfix_prompt(mode: SkinFixMode, strength: SkinFixStrength) -> str:
-    if mode is SkinFixMode.MASKED:
-        prompt = _MASKED_PREFIX + _BASE
-    else:
-        prompt = _BASE
+    prompt = (_MASKED_PREFIX + _BASE) if mode is SkinFixMode.MASKED else _BASE
     if strength is SkinFixStrength.SUBTLE:
         prompt += _SUBTLE_SUFFIX
     return prompt

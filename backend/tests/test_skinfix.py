@@ -24,7 +24,7 @@ def test_output_size_clamps_extreme_aspect():
 def test_prompt_full_vs_masked():
     full = build_skinfix_prompt(SkinFixMode.FULL, SkinFixStrength.STANDARD)
     masked = build_skinfix_prompt(SkinFixMode.MASKED, SkinFixStrength.STANDARD)
-    assert "retoucher" in full
+    assert "natural human skin" in full
     assert "masked region" in masked
     assert "masked region" not in full
     assert full != masked
@@ -33,8 +33,8 @@ def test_prompt_full_vs_masked():
 def test_prompt_subtle_adds_suffix():
     subtle = build_skinfix_prompt(SkinFixMode.FULL, SkinFixStrength.SUBTLE)
     standard = build_skinfix_prompt(SkinFixMode.FULL, SkinFixStrength.STANDARD)
-    assert "minimum" in subtle
-    assert "minimum" not in standard
+    assert "lightest touch" in subtle
+    assert "lightest touch" not in standard
 
 
 def test_composite_keeps_original_outside_mask():
