@@ -1,39 +1,47 @@
-"""Prompt builder for the Skin Fix tool (ported from the QWEEN studio).
+"""Prompt builder for the Skin Fix tool.
 
-Action-first phrasing: the repair is the imperative; preservation rules follow
-so the model treats flake removal as the primary task rather than tying it with
-"preserve every micro-detail".
+Action-first phrasing: flake removal is the imperative; preservation rules
+follow. Generalised beyond faces (works for hands, arms, décolletage, face)
+and it explicitly forbids synthetic / repeating / tiled texture — gpt-image
+otherwise tends to invent a cross-hatch "skin pattern" instead of sampling the
+real surrounding skin.
 """
 from __future__ import annotations
 
 from .models import SkinFixMode, SkinFixStrength
 
+_NO_SYNTH = (
+    "Do NOT invent, add, or overlay any synthetic, repeating, tiled, "
+    "cross-hatched, mesh, netted, scaly or patterned texture. Sample and match "
+    "the real texture, pore size and grain of the adjacent healthy skin. No "
+    "beauty smoothing, airbrushing, frequency-separation softness, or plastic / "
+    "waxy / blurred look."
+)
+
 _FULL = (
-    "Repair every patch of skin flakiness, dryness, peeling, and surface scaling in "
-    "this photo. Replace those rough scaly patches with smooth, healthy, well-hydrated "
-    "skin that still shows natural pores and realistic skin texture at the same grain "
-    "level as the surrounding healthy areas. The flakes must be gone — do not leave them "
-    "partially visible. Do not apply beauty smoothing, airbrushing, frequency-separation "
-    "softness, or any plastic / waxy / blurred look. Keep facial structure, identity, "
-    "expression, age, ethnicity, hair, jewelry and metal reflections, clothing, pose, "
-    "camera angle, lighting direction, shadow placement, contrast, exposure, color "
-    "grading, and background exactly as provided. Preserve fine lines, wrinkles, beard "
-    "stubble, and facial character. Photorealistic result."
+    "Remove all skin flaking, dryness, peeling, cracking and rough scaly patches "
+    "in this photo. Replace them with smooth, healthy, naturally hydrated skin "
+    "that seamlessly matches the tone, colour, lighting and real texture of the "
+    "surrounding healthy skin. The flakes must be completely gone — do not leave "
+    "them partially visible. " + _NO_SYNTH + " Keep the subject's identity, "
+    "anatomy, pose, camera angle, lighting direction, shadow placement, contrast, "
+    "exposure, colour grading, jewellery and metal reflections, clothing, and "
+    "background exactly as provided. Preserve genuine pores, fine lines, wrinkles "
+    "and natural skin character. Photorealistic result."
 )
 
 _MASKED = (
-    "Inside the editable masked region, repair every patch of skin flakiness, dryness, "
-    "peeling, and surface scaling. Replace those rough scaly patches with smooth, "
-    "healthy, well-hydrated skin showing natural pores and realistic skin texture that "
-    "matches the surrounding healthy skin's tone, lighting, shadows, and specular "
-    "highlights so the repair blends seamlessly. The flakes must be gone — do not leave "
-    "them partially visible. No beauty smoothing, airbrushing, or plastic / waxy / "
-    "blurred look. Preserve fine lines, wrinkles, beard stubble, and facial character. "
-    "Photorealistic."
+    "Inside the editable masked region only, remove all skin flaking, dryness, "
+    "peeling and rough scaly patches, and replace them with smooth healthy skin "
+    "that blends invisibly into the surrounding healthy skin's tone, lighting, "
+    "shadows, specular highlights and real texture. The flakes must be completely "
+    "gone. " + _NO_SYNTH + " Preserve genuine pores, fine lines and natural "
+    "character. Leave everything outside the masked region untouched. Photorealistic."
 )
 
 _SUBTLE_SUFFIX = (
-    " Make the minimum change necessary; when in doubt, leave the skin as it is."
+    " Make the minimum change necessary while still fully removing the flaking; "
+    "when in doubt, keep the existing healthy skin."
 )
 
 
