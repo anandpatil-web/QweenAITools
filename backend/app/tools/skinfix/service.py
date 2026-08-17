@@ -7,6 +7,7 @@ to temp storage and referenced by an opaque ``result_id``.
 """
 from __future__ import annotations
 
+import base64
 import io
 import uuid
 from pathlib import Path
@@ -108,6 +109,7 @@ async def run_skin_fix(
         out_w, out_h = img.size
 
     output_filename = build_output_filename(filename, "_skinfix", "png")
+    data_url = "data:image/png;base64," + base64.b64encode(result.image_bytes).decode()
     log.info(
         "skinfix done result_id=%s mode=%s strength=%s size=%s out=%dx%d",
         result_id,
@@ -125,6 +127,7 @@ async def run_skin_fix(
         size=size,
         mode=mode,
         strength=strength,
+        image_data_url=data_url,
     )
 
 

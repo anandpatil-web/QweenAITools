@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AppConfig,
   SelectedImage,
@@ -27,6 +27,7 @@ export function SkinFixTool({ config, previewMode = false }: Props) {
   const [brushMode, setBrushMode] = useState<"brush" | "eraser">("brush");
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<SkinFixResult | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -38,6 +39,29 @@ export function SkinFixTool({ config, previewMode = false }: Props) {
     setToast(msg);
     window.setTimeout(() => setToast(null), 3600);
   }, []);
+
+  // Turn the inline result into a blob URL for a reliable local download
+  // (no second backend request, so it survives free-tier spin-down).
+  useEffect(() => {
+    if (!result?.image_data_url) {
+      setDownloadUrl(null);
+      return;
+    }
+    let url: string | null = null;
+    let cancelled = false;
+    fetch(result.image_data_url)
+      .then((r) => r.blob())
+      .then((b) => {
+        if (cancelled) return;
+        url = URL.createObjectURL(b);
+        setDownloadUrl(url);
+      })
+      .catch(() => setDownloadUrl(null));
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [result]);
 
   const addImage = useCallback(
     async (files: File[]) => {
@@ -259,7 +283,7 @@ export function SkinFixTool({ config, previewMode = false }: Props) {
               </button>
               <a
                 className="qw-btn qw-btn--sm"
-                href={api.skinFixDownloadUrl(result.result_id)}
+                href={downloadUrl ?? result.image_data_url}
                 download={result.output_filename}
               >
                 Download
@@ -270,7 +294,7 @@ export function SkinFixTool({ config, previewMode = false }: Props) {
           <div className="qw-result">
             <BeforeAfterSlider
               beforeSrc={image.previewUrl}
-              afterSrc={api.skinFixPreviewUrl(result.result_id)}
+              afterSrc={result.image_data_url}
             />
           </div>
 

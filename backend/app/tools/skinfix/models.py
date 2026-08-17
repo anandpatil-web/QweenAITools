@@ -24,3 +24,7 @@ class SkinFixResult(BaseModel):
     size: str
     mode: SkinFixMode
     strength: SkinFixStrength
+    # Full result inline (data:image/png;base64,...) so the browser can display
+    # and download it without a second request — resilient to free-tier
+    # instance spin-down/restart wiping the stored file.
+    image_data_url: str

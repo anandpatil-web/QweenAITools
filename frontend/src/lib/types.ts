@@ -42,6 +42,7 @@ export interface SkinFixResult {
   size: string;
   mode: SkinFixMode;
   strength: SkinFixStrength;
+  image_data_url: string;
 }
 
 /** A file the user has selected, plus a locally-generated thumbnail. */
