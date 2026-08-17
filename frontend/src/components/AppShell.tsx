@@ -1,6 +1,19 @@
 import type { ReactNode } from "react";
 
-export function AppShell({ children }: { children: ReactNode }) {
+export type ToolId = "upscaler" | "skinfix";
+
+const TOOLS: { id: ToolId; name: string }[] = [
+  { id: "upscaler", name: "Image Upscaler" },
+  { id: "skinfix", name: "Skin Fix" },
+];
+
+interface Props {
+  children: ReactNode;
+  activeTool: ToolId;
+  onSelectTool: (id: ToolId) => void;
+}
+
+export function AppShell({ children, activeTool, onSelectTool }: Props) {
   return (
     <div className="qw-app">
       <header className="qw-topbar">
@@ -10,7 +23,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="qw-brand__sub">AI Tools</span>
           </div>
           <nav className="qw-topnav">
-            <span className="is-active">Image Upscaler</span>
+            {TOOLS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`qw-topnav__link${t.id === activeTool ? " is-active" : ""}`}
+                onClick={() => onSelectTool(t.id)}
+              >
+                {t.name}
+              </button>
+            ))}
           </nav>
         </div>
       </header>

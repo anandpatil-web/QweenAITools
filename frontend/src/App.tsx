@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { AppShell } from "./components/AppShell";
+import { AppShell, type ToolId } from "./components/AppShell";
 import { UpscalerTool } from "./tools/upscaler/UpscalerTool";
+import { SkinFixTool } from "./tools/skinfix/SkinFixTool";
 import { fetchConfig } from "./lib/api";
 import type { AppConfig } from "./lib/types";
 
@@ -28,11 +29,13 @@ const FALLBACK_CONFIG: AppConfig = {
   accepted_extensions: ["jpg", "jpeg", "png", "webp"],
   fal_configured: false,
   supabase_configured: false,
+  openai_configured: false,
 };
 
 export function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const [tool, setTool] = useState<ToolId>("upscaler");
 
   useEffect(() => {
     fetchConfig()
@@ -44,14 +47,13 @@ export function App() {
   }, []);
 
   return (
-    <AppShell>
+    <AppShell activeTool={tool} onSelectTool={setTool}>
       {previewMode && (
         <div className="qw-banner qw-banner--warn">
           <span>
-            <b>Preview mode.</b> The backend isn’t connected, so scanning and
-            upscaling are disabled. Run the app locally (<code>npm run dev</code>)
-            or host the backend and set <code>VITE_API_BASE</code> to enable
-            processing.
+            <b>Preview mode.</b> The backend isn’t connected, so processing is
+            disabled. Run the app locally (<code>npm run dev</code>) or host the
+            backend and set <code>VITE_API_BASE</code> to enable it.
           </span>
         </div>
       )}
@@ -60,7 +62,12 @@ export function App() {
           Loading…
         </div>
       )}
-      {config && <UpscalerTool config={config} previewMode={previewMode} />}
+      {config && tool === "upscaler" && (
+        <UpscalerTool config={config} previewMode={previewMode} />
+      )}
+      {config && tool === "skinfix" && (
+        <SkinFixTool config={config} previewMode={previewMode} />
+      )}
     </AppShell>
   );
 }

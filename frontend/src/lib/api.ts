@@ -1,4 +1,12 @@
-import type { AppConfig, JobResponse, ScanResponse, SelectedImage } from "./types";
+import type {
+  AppConfig,
+  JobResponse,
+  ScanResponse,
+  SelectedImage,
+  SkinFixMode,
+  SkinFixResult,
+  SkinFixStrength,
+} from "./types";
 
 /** Base URL for the backend API.
  *
@@ -100,4 +108,30 @@ export function resultPreviewUrl(resultId: string): string {
 
 export function downloadAllUrl(jobId: string): string {
   return `${BASE}/jobs/${jobId}/download-all`;
+}
+
+// ---------------------------------------------------------------- Skin Fix
+
+export async function skinFix(
+  image: File,
+  mask: Blob | null,
+  mode: SkinFixMode,
+  strength: SkinFixStrength,
+): Promise<SkinFixResult> {
+  const form = new FormData();
+  form.append("image", image, image.name);
+  if (mask) form.append("mask", mask, "mask.png");
+  form.append("mode", mode);
+  form.append("strength", strength);
+  return jsonOrThrow<SkinFixResult>(
+    await fetch(`${BASE}/skinfix`, { method: "POST", body: form }),
+  );
+}
+
+export function skinFixDownloadUrl(resultId: string): string {
+  return `${BASE}/skinfix/results/${resultId}/download`;
+}
+
+export function skinFixPreviewUrl(resultId: string): string {
+  return `${BASE}/skinfix/results/${resultId}/preview`;
 }

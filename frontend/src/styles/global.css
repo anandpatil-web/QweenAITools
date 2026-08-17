@@ -136,22 +136,36 @@ button {
   align-items: center;
 }
 
-.qw-topnav a,
-.qw-topnav span {
+.qw-topnav__link {
+  background: none;
+  border: none;
+  padding: 4px 0;
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--qw-muted);
   text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
 }
 
-.qw-topnav .is-active {
+.qw-topnav__link:hover {
+  color: var(--qw-ink-soft);
+}
+
+.qw-topnav__link.is-active {
   color: var(--qw-ink);
 }
 
-.qw-topnav .is-future {
-  color: var(--qw-faint);
-  cursor: default;
+.qw-topnav__link.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 1px;
+  background: var(--qw-gold);
 }
 
 .qw-main {
@@ -1082,6 +1096,87 @@ button {
   animation: qw-fade 0.3s var(--qw-ease) both;
   max-width: 90vw;
   text-align: center;
+}
+
+/* --------------------------------------------------------- skin fix */
+
+.qw-skin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.qw-skin-stage__meta {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--qw-muted);
+  letter-spacing: 0.04em;
+}
+
+.qw-skin-canvas {
+  position: relative;
+  border: 1px solid var(--qw-line);
+  border-radius: var(--qw-radius-lg);
+  overflow: hidden;
+  background: var(--qw-bg-2);
+  line-height: 0;
+  box-shadow: var(--qw-shadow);
+}
+
+.qw-skin-canvas img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+.qw-skin-paint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.qw-skin-paint.is-active {
+  cursor: crosshair;
+}
+
+.qw-skin-paint:not(.is-active) {
+  pointer-events: none;
+}
+
+.qw-skin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 24px;
+  background: var(--qw-surface-2);
+  border: 1px solid var(--qw-line);
+  border-radius: var(--qw-radius-lg);
+}
+
+.qw-seg--block {
+  display: flex;
+  width: 100%;
+}
+
+.qw-seg--block button {
+  flex: 1;
+}
+
+.qw-skin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+@media (max-width: 860px) {
+  .qw-skin-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --------------------------------------------------------- responsive */

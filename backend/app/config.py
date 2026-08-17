@@ -74,6 +74,14 @@ class Settings:
     result_ttl_minutes: int = field(default_factory=lambda: _get_int("RESULT_TTL_MINUTES", 60))
     host: str = field(default_factory=lambda: os.getenv("HOST", "127.0.0.1"))
     port: int = field(default_factory=lambda: _get_int("PORT", 8000))
+    # OpenAI (Skin Fix tool). Backend only — never exposed to the frontend.
+    openai_api_key: str = field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY", "").strip()
+    )
+    openai_image_model: str = field(
+        default_factory=lambda: os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-2").strip()
+        or "gpt-image-2"
+    )
     # Optional Supabase-backed system settings/prompts store. Backend only.
     supabase_url: str = field(
         default_factory=lambda: os.getenv("SUPABASE_URL", "").strip().rstrip("/")
@@ -112,6 +120,10 @@ class Settings:
     @property
     def supabase_configured(self) -> bool:
         return bool(self.supabase_url and self.supabase_service_key)
+
+    @property
+    def openai_configured(self) -> bool:
+        return bool(self.openai_api_key)
 
 
 settings = Settings()

@@ -18,6 +18,7 @@ from .config import settings
 from .core.logging import get_logger
 from .settings.router import router as settings_router
 from .storage import local as storage
+from .tools.skinfix.router import router as skinfix_router
 from .tools.upscaler.router import router as upscaler_router
 
 log = get_logger("qween.app")
@@ -30,6 +31,13 @@ TOOLS = [
         "description": "Enhance and upscale jewellery imagery while preserving detail.",
         "status": "available",
         "router": upscaler_router,
+    },
+    {
+        "id": "skinfix",
+        "name": "Skin Fix",
+        "description": "Repair skin flakiness and dryness while preserving natural texture.",
+        "status": "available",
+        "router": skinfix_router,
     },
 ]
 
@@ -92,6 +100,7 @@ async def health() -> dict:
         "status": "ok",
         "fal_configured": settings.fal_key_present,
         "supabase_configured": settings.supabase_configured,
+        "openai_configured": settings.openai_configured,
     }
 
 

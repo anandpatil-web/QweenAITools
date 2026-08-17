@@ -87,6 +87,7 @@ async def get_config() -> dict:
         "accepted_extensions": ["jpg", "jpeg", "png", "webp"],
         "fal_configured": settings.fal_key_present,
         "supabase_configured": settings.supabase_configured,
+        "openai_configured": settings.openai_configured,
     }
 
 

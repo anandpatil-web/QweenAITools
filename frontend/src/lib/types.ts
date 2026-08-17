@@ -28,6 +28,20 @@ export interface AppConfig {
   accepted_extensions: string[];
   fal_configured: boolean;
   supabase_configured?: boolean;
+  openai_configured?: boolean;
+}
+
+export type SkinFixMode = "masked" | "full";
+export type SkinFixStrength = "subtle" | "standard";
+
+export interface SkinFixResult {
+  result_id: string;
+  output_filename: string;
+  width: number;
+  height: number;
+  size: string;
+  mode: SkinFixMode;
+  strength: SkinFixStrength;
 }
 
 /** A file the user has selected, plus a locally-generated thumbnail. */
