@@ -153,7 +153,11 @@ class OpenAIProvider:
                 "This image was rejected by OpenAI's content policy.",
                 technical=technical,
             )
-        return OpenAIError("OpenAI returned an error.", technical=technical)
+        # Surface OpenAI's own error text — it's not sensitive and pinpoints
+        # size / model / format problems for an internal tool.
+        clean = " ".join((message or "").split())[:240]
+        detail = f"OpenAI rejected the request: {clean}" if clean else "OpenAI returned an error."
+        return OpenAIError(detail, technical=technical)
 
 
 @lru_cache(maxsize=1)

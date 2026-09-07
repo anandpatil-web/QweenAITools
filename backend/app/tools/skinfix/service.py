@@ -95,15 +95,18 @@ async def run_skin_fix(
         image_filename="image.png",
         image_content_type="image/png",
         prompt=prompt,
-        size=size,
+        # gpt-image edits only accept 1024x1024 / 1536x1024 / 1024x1536 / auto.
+        # "auto" preserves the input aspect; we hold our own dimensions (`size`)
+        # for compositing and to restore the original resolution below.
+        size="auto",
         mask_bytes=prepared_mask,
     )
 
     # In masked mode, composite the model output back over the ORIGINAL through
     # the mask so only the brushed region can change — everything else stays
     # pixel-identical to the input. (gpt-image edits otherwise re-render the
-    # whole frame.) A feathered edge makes the repair blend seamlessly.
-    final_bytes = result.image_bytes
+    # whole frame.) A feathered edge makes the repair blend seamlessly. In full
+    # mode we simply restore the original dimensions.
     if mode is SkinFixMode.MASKED and prepared_mask is not None:
         final_bytes = _composite_masked(
             original_png=prepared_image,
@@ -111,6 +114,8 @@ async def run_skin_fix(
             mask_png=prepared_mask,
             size=(target_w, target_h),
         )
+    else:
+        final_bytes = _resize_png(result.image_bytes, (target_w, target_h))
 
     # Persist output and read its real dimensions.
     result_id = _new_result_id()
@@ -170,6 +175,16 @@ def _prepare_mask(data: bytes, target: tuple[int, int]) -> bytes:
             return buf.getvalue()
     except Exception as exc:  # noqa: BLE001
         raise ImageValidationError("The brushed mask could not be read.") from exc
+
+
+def _resize_png(data: bytes, size: tuple[int, int]) -> bytes:
+    with Image.open(io.BytesIO(data)) as img:
+        img = img.convert("RGB")
+        if img.size != size:
+            img = img.resize(size, Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue()
 
 
 def _composite_masked(
